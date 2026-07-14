@@ -3,7 +3,12 @@ import HomePage from './features/HomePage.jsx';
 import PackingListTool from './features/packing-list/PackingListTool.jsx';
 
 function normalizePath(pathname) {
-  return pathname.replace(/\/+$/, '') || '/';
+  const basePath = import.meta.env.BASE_URL.replace(/\/+$/, '');
+  const pathWithoutBase = basePath && pathname.startsWith(basePath)
+    ? pathname.slice(basePath.length)
+    : pathname;
+
+  return pathWithoutBase.replace(/\/+$/, '') || '/';
 }
 
 export default function App() {

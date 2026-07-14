@@ -3,7 +3,9 @@ import ExcelJS from 'exceljs';
 import { PACKING_LIST_TEMPLATE_BASE64 } from './packingListTemplateBase64.js';
 import { deriveRowValues } from './validation.js';
 
-export const DEFAULT_TEMPLATE_URL = '/templates/packing-list-template.xlsx';
+const baseUrl = import.meta.env?.BASE_URL || '/';
+
+export const DEFAULT_TEMPLATE_URL = `${baseUrl}templates/packing-list-template.xlsx`;
 
 const DETAIL_TEMPLATE_ROW = 4;
 const MAPPED_COLUMNS = {
