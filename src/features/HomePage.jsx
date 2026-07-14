@@ -29,7 +29,7 @@ export default function HomePage() {
         {tools.map((tool) => {
           const Icon = tool.icon;
           return (
-            <a className="tool-card" href={`${basePath}${tool.href.slice(1)}`} key={tool.href}>
+            <a className="tool-card" href={`${basePath}#${tool.href}`} key={tool.href}>
               <span className="tool-card-icon"><Icon size={24} /></span>
               <strong>{tool.title}</strong>
               <span>{tool.description}</span>

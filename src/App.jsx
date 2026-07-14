@@ -12,7 +12,10 @@ function normalizePath(pathname) {
 }
 
 export default function App() {
-  const path = normalizePath(window.location.pathname);
+  const hashPath = window.location.hash.startsWith('#/')
+    ? window.location.hash.slice(1)
+    : '';
+  const path = hashPath || normalizePath(window.location.pathname);
 
   if (path === '/carton-mark') return <CartonMarkTool />;
   if (path === '/packing-list') return <PackingListTool />;
