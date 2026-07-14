@@ -1,0 +1,30 @@
+{
+  "name": "陈百万的星际征程",
+  "short_name": "星际征程",
+  "description": "健康 × IP × 巴西业务增长系统",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080705",
+  "theme_color": "#0b0a08",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
