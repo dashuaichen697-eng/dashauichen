@@ -454,6 +454,24 @@ td.row-col {
   color: #58677a;
 }
 
+.image-preview-cell {
+  display: flex;
+  min-width: 112px;
+  min-height: 76px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #f8fafc;
+  color: #98a2b3;
+  font-size: 12px;
+}
+
+.image-preview-cell img {
+  max-width: 96px;
+  max-height: 70px;
+  object-fit: contain;
+}
+
 .confirm-table input:focus {
   outline: 2px solid #38bdf8;
   outline-offset: -2px;

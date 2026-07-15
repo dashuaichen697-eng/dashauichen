@@ -12,7 +12,7 @@ const sampleTemplatePath = '/Users/sunshine/Desktop/未命名文件夹/海运装
 async function loadGeneratedWorkbook() {
   const invoiceBuffer = await readFile(sampleInvoicePath);
   const templateBuffer = await readFile(sampleTemplatePath);
-  const rows = createEditableRows(parseInvoiceWorkbook(invoiceBuffer));
+  const rows = createEditableRows(await parseInvoiceWorkbook(invoiceBuffer));
   const outputBuffer = await createPackingListWorkbook(rows, { templateBuffer });
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(outputBuffer);
@@ -56,6 +56,8 @@ test('generates packing list workbook from sample invoice and template', async (
   assert.equal(sheet.getCell('V4').value, '理发haircut');
   assert.equal(sheet.getCell('W4').value, '纸箱');
   assert.equal(sheet.getCell('X4').value, '39×41×41 CM');
+  assert.ok(sheet.getImages().length >= 1);
+  assert.ok(workbook.model.media.length >= 1);
 });
 
 test('generates row-specific volume formulas for multiple product rows', async () => {

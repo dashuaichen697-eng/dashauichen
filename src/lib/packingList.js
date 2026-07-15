@@ -152,6 +152,34 @@ function writeRow(sheet, row, rowNumber) {
   setFormulaCells(sheet, rowNumber);
 }
 
+function imageBufferToExcelBuffer(buffer) {
+  if (!buffer) return null;
+  if (globalThis.Buffer && !globalThis.Buffer.isBuffer(buffer)) {
+    return globalThis.Buffer.from(buffer);
+  }
+  return buffer;
+}
+
+function insertRowImage(workbook, sheet, row, rowNumber) {
+  const image = row.productImage;
+  const buffer = imageBufferToExcelBuffer(image?.buffer);
+  if (!buffer || !image?.extension) return;
+
+  const imageId = workbook.addImage({
+    buffer,
+    extension: image.extension
+  });
+
+  const targetRow = sheet.getRow(rowNumber);
+  targetRow.height = Math.max(targetRow.height || 0, 72);
+  sheet.getColumn('I').width = Math.max(sheet.getColumn('I').width || 0, 16);
+  sheet.addImage(imageId, {
+    tl: { col: 8.08, row: rowNumber - 0.88 },
+    ext: { width: 86, height: 74 },
+    editAs: 'oneCell'
+  });
+}
+
 export async function createPackingListWorkbook(rows, options = {}) {
   const { templateBuffer } = options;
 
@@ -166,7 +194,9 @@ export async function createPackingListWorkbook(rows, options = {}) {
 
   prepareDetailRows(sheet, rows.length);
   rows.forEach((row, index) => {
-    writeRow(sheet, row, DETAIL_TEMPLATE_ROW + index);
+    const rowNumber = DETAIL_TEMPLATE_ROW + index;
+    writeRow(sheet, row, rowNumber);
+    insertRowImage(workbook, sheet, row, rowNumber);
   });
 
   return workbook.xlsx.writeBuffer();

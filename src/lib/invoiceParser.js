@@ -1,10 +1,17 @@
 import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 import { deriveRowValues } from './validation.js';
 
 const INVOICE_SHEET_NAME = '出货信息表';
 const HEADER_ROW_INDEX = 18;
 const FIRST_PRODUCT_ROW_INDEX = 19;
+const XLSX_ZIP_SIGNATURE = [0x50, 0x4b, 0x03, 0x04];
+const IMAGE_MIME_TYPES = {
+  png: 'image/png',
+  jpeg: 'image/jpeg',
+  jpg: 'image/jpeg'
+};
 
 const BASE_FIELD_CELLS = {
   customerOrderNo: 'B2',
@@ -122,6 +129,128 @@ function readWorkbook(buffer) {
   }
 }
 
+function toUint8Array(buffer) {
+  if (buffer instanceof Uint8Array) return buffer;
+  if (buffer instanceof ArrayBuffer) return new Uint8Array(buffer);
+  if (ArrayBuffer.isView(buffer)) return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  return new Uint8Array(buffer);
+}
+
+function isXlsxBuffer(buffer) {
+  const bytes = toUint8Array(buffer);
+  return XLSX_ZIP_SIGNATURE.every((value, index) => bytes[index] === value);
+}
+
+function bytesToBase64(bytes) {
+  if (globalThis.Buffer) {
+    return globalThis.Buffer.from(bytes).toString('base64');
+  }
+
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  }
+  return globalThis.btoa(binary);
+}
+
+function createImagePayload(bytes, extension) {
+  const normalizedExtension = extension === 'jpg' ? 'jpeg' : extension;
+  const uint8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  const mimeType = IMAGE_MIME_TYPES[normalizedExtension] || 'application/octet-stream';
+
+  return {
+    extension: normalizedExtension,
+    mimeType,
+    buffer: uint8,
+    dataUrl: `data:${mimeType};base64,${bytesToBase64(uint8)}`
+  };
+}
+
+function findBytes(haystack, needle, startIndex = 0) {
+  for (let index = startIndex; index <= haystack.length - needle.length; index += 1) {
+    let matched = true;
+    for (let needleIndex = 0; needleIndex < needle.length; needleIndex += 1) {
+      if (haystack[index + needleIndex] !== needle[needleIndex]) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) return index;
+  }
+  return -1;
+}
+
+function extractPngImages(bytes) {
+  const pngStart = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const pngEnd = Uint8Array.from([0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82]);
+  const images = [];
+  let searchIndex = 0;
+
+  while (searchIndex < bytes.length) {
+    const start = findBytes(bytes, pngStart, searchIndex);
+    if (start < 0) break;
+    const end = findBytes(bytes, pngEnd, start + pngStart.length);
+    if (end < 0) break;
+    images.push(createImagePayload(bytes.slice(start, end + pngEnd.length), 'png'));
+    searchIndex = end + pngEnd.length;
+  }
+
+  return images;
+}
+
+function extractJpegImages(bytes) {
+  const jpegStart = Uint8Array.from([0xff, 0xd8, 0xff]);
+  const jpegEnd = Uint8Array.from([0xff, 0xd9]);
+  const images = [];
+  let searchIndex = 0;
+
+  while (searchIndex < bytes.length) {
+    const start = findBytes(bytes, jpegStart, searchIndex);
+    if (start < 0) break;
+    const end = findBytes(bytes, jpegEnd, start + jpegStart.length);
+    if (end < 0) break;
+    images.push(createImagePayload(bytes.slice(start, end + jpegEnd.length), 'jpeg'));
+    searchIndex = end + jpegEnd.length;
+  }
+
+  return images;
+}
+
+function extractImagesFromXls(buffer, rowCount) {
+  const bytes = toUint8Array(buffer);
+  return [...extractPngImages(bytes), ...extractJpegImages(bytes)].slice(0, rowCount);
+}
+
+async function extractImagesFromXlsx(buffer, rowCount) {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+  const sheet = workbook.getWorksheet(INVOICE_SHEET_NAME);
+  if (!sheet) return [];
+
+  const imageByRowIndex = new Map();
+  const mediaById = new Map((workbook.model.media || []).map((media) => [media.index, media]));
+
+  sheet.getImages().forEach((image) => {
+    const media = mediaById.get(image.imageId);
+    if (!media?.buffer || !media.extension) return;
+    const sourceRowIndex = image.range?.tl?.nativeRow;
+    if (!Number.isInteger(sourceRowIndex)) return;
+    if (sourceRowIndex < FIRST_PRODUCT_ROW_INDEX || sourceRowIndex >= FIRST_PRODUCT_ROW_INDEX + rowCount) return;
+    imageByRowIndex.set(sourceRowIndex, createImagePayload(toUint8Array(media.buffer), media.extension));
+  });
+
+  return Array.from({ length: rowCount }, (_, index) => imageByRowIndex.get(FIRST_PRODUCT_ROW_INDEX + index));
+}
+
+async function extractProductImages(buffer, rowCount) {
+  if (rowCount < 1) return [];
+  if (isXlsxBuffer(buffer)) {
+    return extractImagesFromXlsx(buffer, rowCount);
+  }
+  return extractImagesFromXls(buffer, rowCount);
+}
+
 function readBase(sheet) {
   const base = {};
   Object.entries(BASE_FIELD_CELLS).forEach(([key, address]) => {
@@ -189,7 +318,7 @@ function readItems(sheet, headerMap) {
   return items;
 }
 
-export function parseInvoiceWorkbook(buffer) {
+export async function parseInvoiceWorkbook(buffer) {
   const workbook = readWorkbook(buffer);
   const sheet = workbook.Sheets[INVOICE_SHEET_NAME];
 
@@ -200,13 +329,18 @@ export function parseInvoiceWorkbook(buffer) {
   const base = readBase(sheet);
   const { headerMap, headers } = buildHeaderMap(sheet);
   const items = readItems(sheet, headerMap);
+  const images = await extractProductImages(buffer, items.length);
+  const itemsWithImages = items.map((item, index) => ({
+    ...item,
+    productImage: images[index]
+  }));
 
   return {
     sheetName: INVOICE_SHEET_NAME,
     base,
     headers,
     headerMap,
-    items
+    items: itemsWithImages
   };
 }
 
@@ -231,6 +365,7 @@ export function createEditableRows(parsedInvoice) {
     packingSpec: '',
     customer: '',
     owner: '',
+    productImage: item.productImage,
     sourceItem: item
   }));
 }

@@ -25,6 +25,7 @@ const editableFields = [
   { key: 'productChineseName', label: '产品中文品名', required: true, wide: true },
   { key: 'sku', label: 'SKU' },
   { key: 'model', label: '型号' },
+  { key: 'productImage', label: '产品图片', image: true },
   { key: 'cartonCount', label: '箱数', required: true, numeric: true },
   { key: 'quantityPerCarton', label: '每箱数量', required: true, numeric: true },
   { key: 'totalQuantity', label: '总数量', readonly: true },
@@ -108,7 +109,7 @@ export default function PackingListTool() {
 
     try {
       const buffer = await file.arrayBuffer();
-      const parsedInvoice = parseInvoiceWorkbook(buffer);
+      const parsedInvoice = await parseInvoiceWorkbook(buffer);
       const editableRows = createEditableRows(parsedInvoice);
       setFileName(file.name);
       setOriginalRows(editableRows);
@@ -312,16 +313,26 @@ export default function PackingListTool() {
                       const errorMessage = showErrors ? errorMap.get(`${rowIndex}:${field.key}`) : '';
                       return (
                         <td key={field.key} className={field.wide ? 'wide-col' : undefined}>
-                          <input
-                            className={errorMessage ? 'cell-error' : undefined}
-                            type={field.numeric ? 'number' : 'text'}
-                            min={field.numeric ? '0' : undefined}
-                            step={field.numeric ? 'any' : undefined}
-                            readOnly={field.readonly}
-                            title={errorMessage || field.label}
-                            value={formatCellValue(row[field.key])}
-                            onChange={(event) => updateRow(row.id, field.key, event.target.value)}
-                          />
+                          {field.image ? (
+                            <div className="image-preview-cell">
+                              {row.productImage?.dataUrl ? (
+                                <img src={row.productImage.dataUrl} alt={`${row.productChineseName || '产品'}图片`} />
+                              ) : (
+                                <span>无图片</span>
+                              )}
+                            </div>
+                          ) : (
+                            <input
+                              className={errorMessage ? 'cell-error' : undefined}
+                              type={field.numeric ? 'number' : 'text'}
+                              min={field.numeric ? '0' : undefined}
+                              step={field.numeric ? 'any' : undefined}
+                              readOnly={field.readonly}
+                              title={errorMessage || field.label}
+                              value={formatCellValue(row[field.key])}
+                              onChange={(event) => updateRow(row.id, field.key, event.target.value)}
+                            />
+                          )}
                         </td>
                       );
                     })}

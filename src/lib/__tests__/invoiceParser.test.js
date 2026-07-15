@@ -9,7 +9,7 @@ const sampleInvoicePath = '/Users/sunshine/Desktop/未命名文件夹/巴西海�
 
 test('parses the provided Brazil sea freight invoice sample', async () => {
   const buffer = await readFile(sampleInvoicePath);
-  const invoice = parseInvoiceWorkbook(buffer);
+  const invoice = await parseInvoiceWorkbook(buffer);
 
   assert.equal(invoice.sheetName, '出货信息表');
   assert.equal(invoice.base.customerOrderNo, 'HLX-260702-1');
@@ -17,7 +17,9 @@ test('parses the provided Brazil sea freight invoice sample', async () => {
   assert.equal(invoice.base.cartonCount, 14);
   assert.equal(invoice.items.length, 1);
 
-  assert.deepEqual(invoice.items[0], {
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(invoice.items[0]).filter(([key]) => key !== 'productImage')),
+    {
     cartonNo: '1-14',
     poNumber: '/',
     productEnglishName: 'Beard trimmer',
@@ -38,12 +40,17 @@ test('parses the provided Brazil sea freight invoice sample', async () => {
     bluetooth: '不带',
     brand: 'No',
     model: 'No'
-  });
+    }
+  );
+  assert.equal(invoice.items[0].productImage.extension, 'png');
+  assert.equal(invoice.items[0].productImage.mimeType, 'image/png');
+  assert.ok(invoice.items[0].productImage.buffer.length > 1000);
+  assert.ok(invoice.items[0].productImage.dataUrl.startsWith('data:image/png;base64,'));
 });
 
 test('creates editable rows with derived preview values', async () => {
   const buffer = await readFile(sampleInvoicePath);
-  const rows = createEditableRows(parseInvoiceWorkbook(buffer));
+  const rows = createEditableRows(await parseInvoiceWorkbook(buffer));
 
   assert.equal(rows.length, 1);
   assert.equal(rows[0].customerOrderNo, 'HLX-260702-1');
@@ -53,10 +60,11 @@ test('creates editable rows with derived preview values', async () => {
   assert.equal(rows[0].totalVolume, 0.917826);
   assert.equal(rows[0].packingType, '纸箱');
   assert.equal(rows[0].packingSpec, '39×41×41 CM');
+  assert.equal(rows[0].productImage.extension, 'png');
 });
 
-test('rejects invoices without the required sheet', () => {
-  assert.throws(
+test('rejects invoices without the required sheet', async () => {
+  await assert.rejects(
     () => parseInvoiceWorkbook(Buffer.from('not an excel workbook')),
     /找不到“出货信息表”|无法读取 Excel 文件/
   );
