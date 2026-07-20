@@ -6,8 +6,21 @@ const supabaseKey =
 
 export const isCloudConfigured = Boolean(supabaseUrl && supabaseKey);
 
+function getRuntimeSupabaseUrl() {
+  if (!isCloudConfigured || typeof window === 'undefined') return supabaseUrl;
+  const host = window.location.hostname;
+  const isLocalhost = host === 'localhost' || host === '127.0.0.1';
+  const isSupabaseCloud = supabaseUrl.includes('.supabase.co');
+
+  if (!isLocalhost && isSupabaseCloud) {
+    return `${window.location.origin}/supabase`;
+  }
+
+  return supabaseUrl;
+}
+
 export const supabase = isCloudConfigured
-  ? createClient(supabaseUrl, supabaseKey, {
+  ? createClient(getRuntimeSupabaseUrl(), supabaseKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,

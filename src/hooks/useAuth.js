@@ -4,9 +4,13 @@ import { isCloudConfigured, supabase } from '../lib/supabase';
 export function useAuth() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(isCloudConfigured);
+  const [localOnly, setLocalOnly] = useState(false);
 
   useEffect(() => {
-    if (!supabase) return undefined;
+    if (!supabase || localOnly) {
+      setLoading(false);
+      return undefined;
+    }
 
     let mounted = true;
     supabase.auth.getSession()
@@ -29,13 +33,15 @@ export function useAuth() {
       mounted = false;
       data.subscription.unsubscribe();
     };
-  }, []);
+  }, [localOnly]);
 
   async function signIn(email, password) {
+    if (!supabase) return { error: new Error('云端同步尚未配置') };
     return supabase.auth.signInWithPassword({ email, password });
   }
 
   async function signUp(email, password) {
+    if (!supabase) return { error: new Error('云端同步尚未配置') };
     return supabase.auth.signUp({
       email,
       password,
@@ -46,23 +52,34 @@ export function useAuth() {
   }
 
   async function resetPassword(email) {
+    if (!supabase) return { error: new Error('云端同步尚未配置') };
     return supabase.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin,
     });
   }
 
   async function signOut() {
+    if (localOnly || !supabase) return undefined;
     return supabase.auth.signOut();
   }
 
+  function useLocalMode() {
+    setLocalOnly(true);
+    setSession(null);
+    setLoading(false);
+  }
+
   return {
-    configured: isCloudConfigured,
+    configured: isCloudConfigured && !localOnly,
+    cloudAvailable: isCloudConfigured,
+    localOnly,
     loading,
     session,
     user: session?.user ?? null,
     signIn,
     signUp,
     resetPassword,
-    signOut
+    signOut,
+    useLocalMode
   };
 }

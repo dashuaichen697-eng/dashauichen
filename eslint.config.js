@@ -20,6 +20,7 @@ export default [
         localStorage: 'readonly',
         navigator: 'readonly',
         self: 'readonly',
+        URL: 'readonly',
         window: 'readonly'
       },
       parserOptions: {

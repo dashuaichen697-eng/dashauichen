@@ -1,6 +1,20 @@
 import { Cloud, Eye, EyeOff, LoaderCircle, LogIn, Rocket } from 'lucide-react';
 import { useState } from 'react';
 
+function getFriendlyAuthMessage(error) {
+  const rawMessage = error?.message || '连接暂时失败';
+  const messages = {
+    'Invalid login credentials': '邮箱或密码不正确；如果这个邮箱已经注册，请使用原密码登录或点击忘记密码。',
+    'Email not confirmed': '这个旧账号尚未确认，请重新注册或联系管理员处理。',
+    'User already registered': '这个邮箱已经注册，请切换到登录。',
+    'Load failed': '云端同步连接失败。可以切换网络后重试，或先使用本地模式进入。',
+    'Failed to fetch': '云端同步连接失败。可以切换网络后重试，或先使用本地模式进入。',
+    'NetworkError when attempting to fetch resource.': '云端同步连接失败。可以切换网络后重试，或先使用本地模式进入。'
+  };
+
+  return messages[rawMessage] || rawMessage;
+}
+
 export default function Auth({ auth }) {
   const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState('');
@@ -19,20 +33,16 @@ export default function Auth({ auth }) {
       const { data, error } = await action(email.trim(), password);
 
       if (error) {
-        const messages = {
-          'Invalid login credentials': '邮箱或密码不正确；如果这个邮箱已经注册，请使用原密码登录或点击忘记密码。',
-          'Email not confirmed': '这个旧账号尚未确认，请重新注册或联系管理员处理。',
-          'User already registered': '这个邮箱已经注册，请切换到登录。',
-        };
-        setMessage(messages[error.message] || error.message);
+        setMessage(getFriendlyAuthMessage(error));
       } else if (mode === 'signup' && data.user?.identities?.length === 0) {
         setMode('signin');
         setMessage('这个邮箱已经注册，请直接登录；忘记密码可点击下方按钮。');
       } else if (mode === 'signup' && !data.session) {
         setMessage('账号已创建，请切换到登录。');
       }
-    } catch {
-      setMessage('连接暂时失败，请检查网络后重试。');
+    } catch (error) {
+      console.error('[StellarRPG] Auth request failed', error);
+      setMessage(getFriendlyAuthMessage(error));
     } finally {
       setBusy(false);
     }
@@ -48,7 +58,7 @@ export default function Auth({ auth }) {
     setBusy(true);
     setMessage('');
     const { error } = await auth.resetPassword(targetEmail);
-    setMessage(error ? error.message : '密码重置邮件已发送，请到邮箱中打开。');
+    setMessage(error ? getFriendlyAuthMessage(error) : '密码重置邮件已发送，请到邮箱中打开。');
     setBusy(false);
   }
 
@@ -130,6 +140,14 @@ export default function Auth({ auth }) {
               忘记密码
             </button>
           )}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={auth.useLocalMode}
+            className="h-10 w-full rounded-lg border border-gold/20 text-sm font-bold text-amberline disabled:opacity-50"
+          >
+            暂时使用本地模式进入
+          </button>
         </form>
 
         {message && <p className="mt-4 rounded-lg bg-white/5 p-3 text-sm text-amberline">{message}</p>}

@@ -4,6 +4,10 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "rewrites": [
+    {
+      "source": "/supabase/:path*",
+      "destination": "https://zoxbgibulewzkhutdlfp.supabase.co/:path*"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

@@ -82,7 +82,7 @@ npx vercel alias set <latest-deployment-url> chen-million-stellar-v2.vercel.app
 3. 删除 iPhone 桌面旧图标，再重新“添加到主屏幕”。
 4. 如仍显示旧项目，进入 Safari 设置清除该域名网站数据，或等待新的 service worker 激活。
 
-本项目 service worker 当前缓存版本为 `stellar-rpg-v8`，会在新部署后清理旧缓存，并只缓存 `200` 的 HTML，避免错误页或旧工具箱页面继续被 PWA 使用。
+本项目 service worker 当前缓存版本为 `stellar-rpg-v9`，会在新部署后清理旧缓存，并只缓存 `200` 的 HTML，避免错误页或旧工具箱页面继续被 PWA 使用。`/supabase/` 同步接口会绕过 PWA 缓存。
 
 ## Supabase 同步
 
@@ -94,3 +94,5 @@ VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 ```
 
 未配置环境变量时应用使用纯 localStorage 模式。
+
+线上版本会把 Supabase 请求代理到同源 `/supabase/*`，用于减少手机网络直接访问 `*.supabase.co` 失败导致的 `Load failed`。如果云端仍暂时不可用，登录页可以点击“暂时使用本地模式进入”，数据会先保存在当前设备。

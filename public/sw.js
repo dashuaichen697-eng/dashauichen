@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stellar-rpg-v8';
+const CACHE_NAME = 'stellar-rpg-v9';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -27,6 +27,9 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.pathname.startsWith('/supabase/')) return;
+
   if (event.request.method !== 'GET') return;
 
   if (event.request.mode === 'navigate') {
