@@ -21,7 +21,7 @@ const pages = {
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
   const auth = useAuth();
-  const gameState = useGameState(auth.user);
+  const gameState = useGameState(auth.user, auth.session?.access_token);
   const game = {
     ...gameState,
     user: auth.user,

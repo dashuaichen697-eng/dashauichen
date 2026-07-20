@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CATEGORY_COLORS } from '../data/gameConfig';
-import { supabase } from '../lib/supabase';
 import { getDateKey } from '../utils/date';
 import {
   completeTask,
@@ -22,7 +21,7 @@ function withTimestamp(state) {
   return { ...state, updatedAt: new Date().toISOString() };
 }
 
-export function useGameState(user) {
+export function useGameState(user, accessToken) {
   const [state, setState] = useState(loadState);
   const [reward, setReward] = useState(null);
   const [toast, setToast] = useState(null);
@@ -42,94 +41,84 @@ export function useGameState(user) {
   }, [state]);
 
   useEffect(() => {
-    if (!supabase || !user) {
+    if (!user || !accessToken) {
       setCloudReady(false);
       setSyncStatus('local');
       return undefined;
     }
 
     let active = true;
-    let channel;
 
     async function initializeCloudState() {
       setSyncStatus('connecting');
-      const { data, error } = await supabase
-        .from('game_states')
-        .select('state, updated_at')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      const response = await fetch('/api/state', {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      const result = await response.json();
 
       if (!active) return;
-      if (error) {
+      if (!response.ok || result.error) {
         setSyncStatus('error');
         return;
       }
 
-      if (data) {
-        const remoteState = normalizeState({ ...data.state, updatedAt: data.updated_at });
-        lastSyncedAt.current = data.updated_at;
+      if (result.data?.state) {
+        const remoteState = normalizeState({
+          ...result.data.state,
+          updatedAt: result.data.updatedAt || result.data.state.updatedAt
+        });
+        lastSyncedAt.current = remoteState.updatedAt;
         stateRef.current = remoteState;
         setState(remoteState);
       } else {
         const localState = stateRef.current;
-        const { error: uploadError } = await supabase.from('game_states').upsert({
-          user_id: user.id,
-          state: localState,
-          updated_at: localState.updatedAt
+        const uploadResponse = await fetch('/api/state', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ state: localState, updatedAt: localState.updatedAt })
         });
-        if (uploadError) {
+        const uploadResult = await uploadResponse.json();
+        if (!uploadResponse.ok || uploadResult.error) {
           setSyncStatus('error');
           return;
         }
         lastSyncedAt.current = localState.updatedAt;
       }
 
-      channel = supabase
-        .channel(`game-state-${user.id}`)
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'game_states', filter: `user_id=eq.${user.id}` },
-          (payload) => {
-            const row = payload.new;
-            if (!row?.state || !row.updated_at) return;
-            if (new Date(row.updated_at) <= new Date(stateRef.current.updatedAt)) return;
-            const remoteState = normalizeState({ ...row.state, updatedAt: row.updated_at });
-            lastSyncedAt.current = row.updated_at;
-            stateRef.current = remoteState;
-            setState(remoteState);
-            setSyncStatus('synced');
-          }
-        )
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') setSyncStatus('synced');
-          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setSyncStatus('error');
-        });
-
       setCloudReady(true);
       setSyncStatus('synced');
     }
 
-    initializeCloudState();
+    initializeCloudState().catch((error) => {
+      console.error('[StellarRPG] Cloud state init failed', error);
+      if (active) setSyncStatus('error');
+    });
 
     return () => {
       active = false;
       setCloudReady(false);
-      if (channel) supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [accessToken, user]);
 
   useEffect(() => {
-    if (!supabase || !user || !cloudReady || state.updatedAt === lastSyncedAt.current) return undefined;
+    if (!user || !accessToken || !cloudReady || state.updatedAt === lastSyncedAt.current) return undefined;
 
     setSyncStatus('syncing');
     const timer = window.setTimeout(async () => {
-      const { error } = await supabase.from('game_states').upsert({
-        user_id: user.id,
-        state,
-        updated_at: state.updatedAt
+      const response = await fetch('/api/state', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ state, updatedAt: state.updatedAt })
       });
+      const result = await response.json();
 
-      if (error) {
+      if (!response.ok || result.error) {
         setSyncStatus('error');
         return;
       }
@@ -138,7 +127,7 @@ export function useGameState(user) {
     }, 500);
 
     return () => window.clearTimeout(timer);
-  }, [cloudReady, state, user]);
+  }, [accessToken, cloudReady, state, user]);
 
   const derived = useMemo(() => {
     const totalXp = getEarnedXp(state);

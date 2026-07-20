@@ -21,6 +21,7 @@ export default [
       ecmaVersion: 'latest',
       sourceType: 'module',
       globals: {
+        Buffer: 'readonly',
         caches: 'readonly',
         console: 'readonly',
         document: 'readonly',
@@ -29,6 +30,7 @@ export default [
         navigator: 'readonly',
         process: 'readonly',
         self: 'readonly',
+        TextDecoder: 'readonly',
         URL: 'readonly',
         window: 'readonly'
       },

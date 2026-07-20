@@ -39,7 +39,7 @@ export default function Auth({ auth }) {
         setMode('signin');
         setMessage('这个邮箱已经注册，请直接登录；忘记密码可点击下方按钮。');
       } else if (mode === 'signup' && !data.session) {
-        setMessage('账号已创建。请到邮箱确认后再登录；如果暂时收不到邮件，可以先使用本地模式进入。');
+        setMessage('账号已创建，请切换到登录。');
       }
     } catch (error) {
       console.error('[StellarRPG] Auth request failed', error);

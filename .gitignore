@@ -8,3 +8,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .vercel
+
+# 独立产品仓库。父治理仓库不得跟踪其源码。
+/michael-life-rpg/
+/michael-box-label-generator/
+/michael-brazil-crm/
+.env*

@@ -1,39 +1,32 @@
 import { useEffect, useState } from 'react';
-import { isCloudConfigured, supabase } from '../lib/supabase';
+
+const SESSION_KEY = 'stellar-rpg-cloud-session';
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(session) {
+  if (session) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } else {
+    localStorage.removeItem(SESSION_KEY);
+  }
+}
 
 export function useAuth() {
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(isCloudConfigured);
+  const [session, setSession] = useState(loadSession);
+  const [loading, setLoading] = useState(false);
   const [localOnly, setLocalOnly] = useState(false);
 
   useEffect(() => {
-    if (!supabase || localOnly) {
-      setLoading(false);
-      return undefined;
-    }
-
-    let mounted = true;
-    supabase.auth.getSession()
-      .then(({ data }) => {
-        if (!mounted) return;
-        setSession(data.session);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error('[StellarRPG] Supabase session 初始化失败', error);
-        if (mounted) setLoading(false);
-      });
-
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setLoading(false);
-    });
-
-    return () => {
-      mounted = false;
-      data.subscription.unsubscribe();
-    };
-  }, [localOnly]);
+    saveSession(localOnly ? null : session);
+  }, [localOnly, session]);
 
   async function callAuthApi(mode, payload) {
     const response = await fetch(`/api/auth?mode=${mode}`, {
@@ -55,35 +48,28 @@ export function useAuth() {
 
   async function applySession(result) {
     const nextSession = result.data?.session;
-    if (nextSession && supabase) {
-      const { error } = await supabase.auth.setSession({
-        access_token: nextSession.access_token,
-        refresh_token: nextSession.refresh_token
-      });
-      if (error) return { data: result.data, error };
+    if (nextSession) {
       setSession(nextSession);
     }
     return result;
   }
 
   async function signIn(email, password) {
-    if (!supabase) return { error: new Error('云端同步尚未配置') };
     return applySession(await callAuthApi('signin', { email, password }));
   }
 
   async function signUp(email, password) {
-    if (!supabase) return { error: new Error('云端同步尚未配置') };
     return applySession(await callAuthApi('signup', { email, password }));
   }
 
   async function resetPassword(email) {
-    if (!supabase) return { error: new Error('云端同步尚未配置') };
     return callAuthApi('reset', { email });
   }
 
   async function signOut() {
-    if (localOnly || !supabase) return undefined;
-    return supabase.auth.signOut();
+    setSession(null);
+    saveSession(null);
+    return undefined;
   }
 
   function useLocalMode() {
@@ -93,8 +79,8 @@ export function useAuth() {
   }
 
   return {
-    configured: isCloudConfigured && !localOnly,
-    cloudAvailable: isCloudConfigured,
+    configured: !localOnly,
+    cloudAvailable: true,
     localOnly,
     loading,
     session,
