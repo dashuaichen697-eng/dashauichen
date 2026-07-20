@@ -65,6 +65,16 @@ Vercel 项目设置：
 
 如果 `chen-million-stellar-v2.vercel.app` 显示了物流工具箱，说明该域名指向了错误部署，或 Production Deployment 来自物流工具箱提交。需要重新部署本 RPG 根目录，并把 `chen-million-stellar-v2.vercel.app` alias 指向新的 RPG production deployment。
 
+如果手机访问提示无权限或返回 `401 Unauthorized`，检查 Vercel Project 的 Deployment Protection / Vercel Authentication。面向手机桌面使用时，`*.vercel.app` 访问需要关闭保护，或改用已放行的自定义域名。
+
+常用核对命令：
+
+```bash
+npx vercel project inspect chen-million-stellar-rpg
+npx vercel inspect chen-million-stellar-v2.vercel.app
+npx vercel alias set <latest-deployment-url> chen-million-stellar-v2.vercel.app
+```
+
 ## 手机端访问排查
 
 1. 用 Safari 打开 HTTPS 地址。
