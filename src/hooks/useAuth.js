@@ -35,27 +35,50 @@ export function useAuth() {
     };
   }, [localOnly]);
 
+  async function callAuthApi(mode, payload) {
+    const response = await fetch(`/api/auth?mode=${mode}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await response.json().catch(() => ({
+      data: null,
+      error: { message: '云端同步连接失败，请稍后重试或先使用本地模式进入。' }
+    }));
+
+    if (!response.ok && !result.error) {
+      return { data: null, error: { message: '云端同步连接失败，请稍后重试或先使用本地模式进入。' } };
+    }
+
+    return result;
+  }
+
+  async function applySession(result) {
+    const nextSession = result.data?.session;
+    if (nextSession && supabase) {
+      const { error } = await supabase.auth.setSession({
+        access_token: nextSession.access_token,
+        refresh_token: nextSession.refresh_token
+      });
+      if (error) return { data: result.data, error };
+      setSession(nextSession);
+    }
+    return result;
+  }
+
   async function signIn(email, password) {
     if (!supabase) return { error: new Error('云端同步尚未配置') };
-    return supabase.auth.signInWithPassword({ email, password });
+    return applySession(await callAuthApi('signin', { email, password }));
   }
 
   async function signUp(email, password) {
     if (!supabase) return { error: new Error('云端同步尚未配置') };
-    return supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-      },
-    });
+    return applySession(await callAuthApi('signup', { email, password }));
   }
 
   async function resetPassword(email) {
     if (!supabase) return { error: new Error('云端同步尚未配置') };
-    return supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
-    });
+    return callAuthApi('reset', { email });
   }
 
   async function signOut() {

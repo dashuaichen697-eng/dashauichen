@@ -4,7 +4,15 @@ import reactHooks from 'eslint-plugin-react-hooks';
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', '.npm-cache/**', 'brazil-logistics-partner-system/**']
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      '.npm-cache/**',
+      'brazil-logistics-partner-system/**',
+      'michael-box-label-generator/**',
+      'michael-brazil-crm/**',
+      'michael-life-rpg/**'
+    ]
   },
   js.configs.recommended,
   {
@@ -19,6 +27,7 @@ export default [
         fetch: 'readonly',
         localStorage: 'readonly',
         navigator: 'readonly',
+        process: 'readonly',
         self: 'readonly',
         URL: 'readonly',
         window: 'readonly'

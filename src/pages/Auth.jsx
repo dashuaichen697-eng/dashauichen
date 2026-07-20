@@ -2,17 +2,18 @@ import { Cloud, Eye, EyeOff, LoaderCircle, LogIn, Rocket } from 'lucide-react';
 import { useState } from 'react';
 
 function getFriendlyAuthMessage(error) {
-  const rawMessage = error?.message || '连接暂时失败';
+  const rawMessage = typeof error?.message === 'string' ? error.message : '';
   const messages = {
     'Invalid login credentials': '邮箱或密码不正确；如果这个邮箱已经注册，请使用原密码登录或点击忘记密码。',
     'Email not confirmed': '这个旧账号尚未确认，请重新注册或联系管理员处理。',
     'User already registered': '这个邮箱已经注册，请切换到登录。',
     'Load failed': '云端同步连接失败。可以切换网络后重试，或先使用本地模式进入。',
     'Failed to fetch': '云端同步连接失败。可以切换网络后重试，或先使用本地模式进入。',
-    'NetworkError when attempting to fetch resource.': '云端同步连接失败。可以切换网络后重试，或先使用本地模式进入。'
+    'NetworkError when attempting to fetch resource.': '云端同步连接失败。可以切换网络后重试，或先使用本地模式进入。',
+    '{}': '云端同步返回了空错误。请稍后重试，或先使用本地模式进入。'
   };
 
-  return messages[rawMessage] || rawMessage;
+  return messages[rawMessage] || rawMessage || '云端同步连接失败。可以切换网络后重试，或先使用本地模式进入。';
 }
 
 export default function Auth({ auth }) {
@@ -38,7 +39,7 @@ export default function Auth({ auth }) {
         setMode('signin');
         setMessage('这个邮箱已经注册，请直接登录；忘记密码可点击下方按钮。');
       } else if (mode === 'signup' && !data.session) {
-        setMessage('账号已创建，请切换到登录。');
+        setMessage('账号已创建。请到邮箱确认后再登录；如果暂时收不到邮件，可以先使用本地模式进入。');
       }
     } catch (error) {
       console.error('[StellarRPG] Auth request failed', error);
