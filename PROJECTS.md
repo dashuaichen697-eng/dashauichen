@@ -8,13 +8,13 @@
 
 用途：个人任务、经验值、金币、奖励商城与长期目标管理。
 
-GitHub：待创建 `michael-life-rpg`
+GitHub：[dashuaichen697-eng/michael-life-rpg](https://github.com/dashuaichen697-eng/michael-life-rpg)（私有）
 
-Vercel：待创建 `michael-life-rpg`
+Vercel：[michael-life-rpg](https://vercel.com/dashuaichen697-6572s-projects/michael-life-rpg)
 
-域名：待验证 `michael-life-rpg.vercel.app`
+域名：[michael-life-rpg.vercel.app](https://michael-life-rpg.vercel.app)
 
-状态：迁移中
+状态：已隔离、已推送、已部署；Vercel GitHub Login Connection 待授权，线上页面内容待网络恢复后复核
 
 ## 箱唛自动生成器
 
@@ -22,13 +22,13 @@ Vercel：待创建 `michael-life-rpg`
 
 用途：独立生成和导出物流箱唛。
 
-GitHub：待创建 `michael-box-label-generator`
+GitHub：[dashuaichen697-eng/michael-box-label-generator](https://github.com/dashuaichen697-eng/michael-box-label-generator)（私有）
 
-Vercel：待创建 `michael-box-label-generator`
+Vercel：[michael-box-label-generator](https://vercel.com/dashuaichen697-6572s-projects/michael-box-label-generator)
 
-域名：待验证 `michael-box-label-generator.vercel.app`
+域名：[michael-box-label-generator.vercel.app](https://michael-box-label-generator.vercel.app)
 
-状态：迁移中
+状态：已隔离、已推送、已部署；Vercel GitHub Login Connection 待授权，线上页面内容待网络恢复后复核
 
 ## 华迅达 CRM 系统
 
@@ -36,13 +36,13 @@ Vercel：待创建 `michael-box-label-generator`
 
 用途：巴西物流合作伙伴、客户、协助任务、货件和佣金管理。
 
-GitHub：待创建 `michael-brazil-crm`
+GitHub：[dashuaichen697-eng/michael-brazil-crm](https://github.com/dashuaichen697-eng/michael-brazil-crm)（私有）
 
-Vercel：待创建 `michael-brazil-crm`
+Vercel：[michael-brazil-crm](https://vercel.com/dashuaichen697-6572s-projects/michael-brazil-crm)
 
-域名：待验证 `michael-brazil-crm.vercel.app`
+域名：[michael-brazil-crm.vercel.app](https://michael-brazil-crm.vercel.app)
 
-状态：迁移中
+状态：已隔离、已推送、已部署；Vercel GitHub Login Connection 待授权，线上页面内容待网络恢复后复核
 
 ## 冻结迁移源
 
@@ -56,4 +56,4 @@ Vercel：当前历史绑定为 `chen-million-stellar-rpg`
 
 域名：`chen-million-stellar-rpg.vercel.app`、`chen-million-stellar-v2.vercel.app`
 
-状态：迁移期间保持可恢复；新项目全部验证前不删除、不改写历史
+状态：冻结迁移源；不再用于新产品开发，不删除、不改写历史
