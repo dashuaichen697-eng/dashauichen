@@ -110,6 +110,15 @@ npx vercel alias set <latest-deployment-url> chen-million-stellar-v2.vercel.app
 
 首次联网访问后，短时间离线仍可打开首页。用户刷新一次页面即可触发新版 service worker 更新。
 
+本地 Lighthouse 检查：
+
+```bash
+npm run preview -- --port 4173
+npx lighthouse http://localhost:4173 --chrome-flags="--headless=new --no-sandbox"
+```
+
+说明：新版 Lighthouse 已移除旧版独立 PWA category，可重点查看 manifest、service worker、移动端 viewport、最佳实践和离线能力。
+
 ## 云同步
 
 线上账号和游戏数据通过 Vercel Blob 私有存储同步。Vercel 项目需要绑定 Blob store，并配置 `BLOB_READ_WRITE_TOKEN`。
