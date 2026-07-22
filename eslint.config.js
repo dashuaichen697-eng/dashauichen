@@ -26,6 +26,7 @@ export default [
         console: 'readonly',
         document: 'readonly',
         fetch: 'readonly',
+        importScripts: 'readonly',
         localStorage: 'readonly',
         navigator: 'readonly',
         process: 'readonly',

@@ -23,6 +23,11 @@ body {
   color: #fff7df;
 }
 
+body,
+#root {
+  min-height: 100vh;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -84,6 +89,70 @@ textarea.form-input {
 
 .reward-pop {
   animation: reward-pop 560ms cubic-bezier(.2, 1.2, .2, 1) both;
+}
+
+.stellar-splash {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: calc(env(safe-area-inset-top) + 2rem) 1.5rem calc(env(safe-area-inset-bottom) + 2rem);
+  background:
+    radial-gradient(circle at 50% 28%, rgba(212, 175, 55, .24), transparent 16rem),
+    linear-gradient(180deg, #181207 0%, #070604 48%, #000 100%);
+  text-align: center;
+}
+
+.stellar-splash__mark {
+  display: grid;
+  width: 7.5rem;
+  height: 7.5rem;
+  place-items: center;
+  border-radius: 1.75rem;
+  background: #070604;
+  box-shadow: 0 0 0 1px rgba(212, 175, 55, .45), 0 1.5rem 5rem rgba(212, 175, 55, .25);
+  animation: splash-lift 900ms cubic-bezier(.2, 1, .2, 1) both;
+}
+
+.stellar-splash__mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.stellar-splash h1 {
+  margin: 1.4rem 0 0;
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 950;
+  line-height: 1.1;
+}
+
+.stellar-splash p {
+  margin: .6rem 0 0;
+  color: #f4d27a;
+  font-size: .95rem;
+  font-weight: 800;
+}
+
+@media (max-width: 360px) {
+  .stellar-splash h1 {
+    font-size: 1.7rem;
+  }
+}
+
+@keyframes splash-lift {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(.92);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes reward-pop {

@@ -1,6 +1,6 @@
 # 陈百万的星际征程
 
-一个手机端优先、可配置的人生 RPG PWA。任务、分类权重、XP、金币、奖励商城和长期主线目标均可在应用内管理。项目使用 React、Vite、Tailwind CSS 和 localStorage，并保留 Supabase 实时同步能力。
+一个手机端优先、可配置的人生 RPG PWA。任务、分类权重、XP、金币、奖励商城和长期主线目标均可在应用内管理。项目使用 React、Vite、Tailwind CSS、localStorage 和 Vercel Blob 云同步。
 
 ## 重要部署说明
 
@@ -25,7 +25,8 @@ Alias: https://chen-million-stellar-v2.vercel.app/
 - 商城页：金币兑换奖励，奖励可增删改启停
 - 统计页：每日 XP、周完成率、分类完成率和累计指标
 - PWA：支持 iPhone Safari 添加到主屏幕
-- 同步：配置 Supabase 后，同一账号在电脑和 iPhone 实时同步
+- 同步：通过 Vercel Blob 账号系统，同一账号在电脑和 iPhone 同步
+- 安装：标准 PWA，支持 iPhone Safari 添加到主屏幕后独立运行
 
 ## 本地运行
 
@@ -82,17 +83,33 @@ npx vercel alias set <latest-deployment-url> chen-million-stellar-v2.vercel.app
 3. 删除 iPhone 桌面旧图标，再重新“添加到主屏幕”。
 4. 如仍显示旧项目，进入 Safari 设置清除该域名网站数据，或等待新的 service worker 激活。
 
-本项目 service worker 当前缓存版本为 `stellar-rpg-v9`，会在新部署后清理旧缓存，并只缓存 `200` 的 HTML，避免错误页或旧工具箱页面继续被 PWA 使用。`/supabase/` 同步接口会绕过 PWA 缓存。
+本项目 service worker 当前缓存版本为 `stellar-rpg-pwa-v10`，会在新部署后清理旧缓存，并缓存 HTML、CSS、JS、图片和 manifest。`/api/` 同步接口会绕过 PWA 缓存。
 
-## Supabase 同步
+## iPhone 添加到主屏幕
 
-在 Vercel 和本地 `.env.local` 中配置：
+1. 用 iPhone Safari 打开 `https://chen-million-stellar-v2.vercel.app/`。
+2. 等首页正常加载一次。
+3. 点击 Safari 底部分享按钮。
+4. 选择“添加到主屏幕”。
+5. 名称建议保留“陈百万的星际征程”。
+6. 点击“添加”。
 
-```bash
-VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
-```
+安装后从桌面图标打开，会以 standalone 模式运行，没有 Safari 地址栏，并显示黑金火箭 App 图标和启动画面。
 
-未配置环境变量时应用使用纯 localStorage 模式。
+## PWA 检查
 
-线上版本会把 Supabase 请求代理到同源 `/supabase/*`，用于减少手机网络直接访问 `*.supabase.co` 失败导致的 `Load failed`。如果云端仍暂时不可用，登录页可以点击“暂时使用本地模式进入”，数据会先保存在当前设备。
+关键资源：
+
+- `/manifest.webmanifest`
+- `/service-worker.js`
+- `/apple-touch-icon.png`
+- `/icon-192.png`
+- `/icon-512.png`
+- `/maskable-icon.png`
+- `/favicon.ico`
+
+首次联网访问后，短时间离线仍可打开首页。用户刷新一次页面即可触发新版 service worker 更新。
+
+## 云同步
+
+线上账号和游戏数据通过 Vercel Blob 私有存储同步。Vercel 项目需要绑定 Blob store，并配置 `BLOB_READ_WRITE_TOKEN`。

@@ -20,6 +20,7 @@ const pages = {
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
+  const [showSplash, setShowSplash] = useState(true);
   const auth = useAuth();
   const gameState = useGameState(auth.user, auth.session?.access_token);
   const game = {
@@ -37,6 +38,23 @@ export default function App() {
     const timer = window.setTimeout(() => setToast(null), 2200);
     return () => window.clearTimeout(timer);
   }, [toast, setToast]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowSplash(false), 1200);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  if (showSplash) {
+    return (
+      <main className="stellar-splash min-h-screen text-white">
+        <div className="stellar-splash__mark">
+          <img src="/icon-192.png" alt="陈百万的星际征程" />
+        </div>
+        <h1>陈百万的星际征程</h1>
+        <p>人生 RPG 驾驶舱</p>
+      </main>
+    );
+  }
 
   if (auth.loading) {
     return (

@@ -21,7 +21,7 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
       window.location.reload();
     });
 
-    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then((registration) => {
+    navigator.serviceWorker.register('/service-worker.js', { updateViaCache: 'none' }).then((registration) => {
       if (registration.waiting) registration.waiting.postMessage({ type: 'SKIP_WAITING' });
       registration.addEventListener('updatefound', () => {
         const worker = registration.installing;
