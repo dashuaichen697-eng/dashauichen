@@ -1,8 +1,36 @@
 import { ACHIEVEMENTS, LEVELS, MOTIVATIONS, WEEKDAYS } from '../data/gameConfig';
 import { addDays, getDateKey, getWeekRange, isSameOrBeforeDay, parseDateKey } from './date';
 
+export const BRAZIL_CONTAINER_TASK_ID = 'task-container';
+export const BRAZIL_QUEST_ID = 'quest-brazil';
+
 export function createId(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeTaskLabel(value = '') {
+  return String(value).replace(/\s+/g, '');
+}
+
+export function isBrazilContainerTask(task = {}) {
+  const label = normalizeTaskLabel(task.name ?? task.title ?? '');
+  return task.id === BRAZIL_CONTAINER_TASK_ID
+    || task.taskId === BRAZIL_CONTAINER_TASK_ID
+    || label.includes('卖家走1条柜子')
+    || label.includes('卖家走一条柜子');
+}
+
+function advanceBrazilMainQuest(mainQuests = []) {
+  return mainQuests.map((quest) => {
+    if (quest.id !== BRAZIL_QUEST_ID) return quest;
+    const current = Number(quest.current ?? 0);
+    const target = Number(quest.target ?? 0);
+    const nextCurrent = current + 1;
+    return {
+      ...quest,
+      current: target > 0 ? Math.min(target, nextCurrent) : nextCurrent
+    };
+  });
 }
 
 export function isTaskActiveOnDate(task, date = new Date()) {
@@ -102,7 +130,8 @@ export function completeTask(state, task, date = new Date()) {
     completions: {
       ...state.completions,
       [dateKey]: { ...(state.completions[dateKey] ?? {}), [task.id]: completion }
-    }
+    },
+    mainQuests: isBrazilContainerTask(task) ? advanceBrazilMainQuest(state.mainQuests) : state.mainQuests
   };
   const afterLevel = getLevel(getEarnedXp(nextState)).current.level;
   const achievements = getNewAchievements(nextState);

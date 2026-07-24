@@ -32,7 +32,7 @@ export const DEFAULT_TASK_TEMPLATES = [
 export const DEFAULT_MAIN_QUESTS = [
   { id: 'quest-running', name: '健康跑步', period: '2026年', target: 120, current: 5, unit: '公里', showOnDashboard: true },
   { id: 'quest-ip', name: '个人IP', period: '2026年', target: 72, current: 3, unit: '个视频', showOnDashboard: true },
-  { id: 'quest-brazil', name: '巴西远征', period: '2026年', target: 24, current: 0, unit: '条柜', showOnDashboard: true }
+  { id: 'quest-brazil', name: '巴西远征', period: '2026年', target: 90, current: 0, unit: '条柜', showOnDashboard: true }
 ];
 
 export const DEFAULT_REWARDS = [

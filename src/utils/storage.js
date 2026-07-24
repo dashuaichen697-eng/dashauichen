@@ -1,7 +1,10 @@
 import { DEFAULT_CATEGORIES, DEFAULT_MAIN_QUESTS, DEFAULT_REWARDS, DEFAULT_TASK_TEMPLATES } from '../data/gameConfig';
+import { BRAZIL_QUEST_ID, isBrazilContainerTask } from './game';
 
 const STORAGE_KEY = 'stellar-rpg-state-v1';
 const SCHEMA_VERSION = 3;
+const LEGACY_BRAZIL_CONTAINER_TARGET = 24;
+const BRAZIL_CONTAINER_TARGET = 90;
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -91,9 +94,42 @@ function normalizeRewards(rewards) {
   }));
 }
 
+function getBrazilContainerCompletionCount(completions = {}) {
+  return Object.values(completions).reduce((sum, items) => (
+    sum + Object.values(items ?? {}).filter((item) => isBrazilContainerTask(item)).length
+  ), 0);
+}
+
+function normalizeMainQuests(mainQuests, completions) {
+  const containerCount = getBrazilContainerCompletionCount(completions);
+  let changed = false;
+  const quests = mainQuests.map((quest) => {
+    if (quest.id !== BRAZIL_QUEST_ID) return quest;
+    const current = Number(quest.current ?? 0);
+    const target = Number(quest.target ?? 0);
+    const nextTarget = !target || target === LEGACY_BRAZIL_CONTAINER_TARGET ? BRAZIL_CONTAINER_TARGET : target;
+    const nextCurrent = Math.max(current, containerCount);
+    changed = changed || nextTarget !== target || nextCurrent !== current;
+    return {
+      ...quest,
+      target: nextTarget,
+      current: nextCurrent
+    };
+  });
+  return { quests, changed };
+}
+
 export function normalizeState(value = {}) {
   const initial = createInitialState();
-  const migrated = value.schemaVersion !== SCHEMA_VERSION || !Array.isArray(value.tasks) || !Array.isArray(value.categories);
+  const completions = normalizeCompletions(value.completions);
+  const normalizedMainQuests = normalizeMainQuests(
+    Array.isArray(value.mainQuests) ? value.mainQuests : DEFAULT_MAIN_QUESTS,
+    completions
+  );
+  const migrated = value.schemaVersion !== SCHEMA_VERSION
+    || !Array.isArray(value.tasks)
+    || !Array.isArray(value.categories)
+    || normalizedMainQuests.changed;
   return {
     ...initial,
     ...value,
@@ -101,8 +137,8 @@ export function normalizeState(value = {}) {
     categories: clone(Array.isArray(value.categories) ? value.categories : DEFAULT_CATEGORIES),
     tasks: clone(normalizeTasks(Array.isArray(value.tasks) ? value.tasks : migrateLegacyTasks(value))),
     rewards: clone(normalizeRewards(Array.isArray(value.rewards) ? value.rewards : DEFAULT_REWARDS)),
-    mainQuests: clone(Array.isArray(value.mainQuests) ? value.mainQuests : DEFAULT_MAIN_QUESTS),
-    completions: normalizeCompletions(value.completions),
+    mainQuests: clone(normalizedMainQuests.quests),
+    completions,
     redemptions: Array.isArray(value.redemptions) ? value.redemptions : [],
     achievements: Array.isArray(value.achievements) ? value.achievements : [],
     createdAt: value.createdAt ?? initial.createdAt,
