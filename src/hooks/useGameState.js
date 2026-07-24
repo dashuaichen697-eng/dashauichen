@@ -63,11 +63,12 @@ export function useGameState(user, accessToken) {
       }
 
       if (result.data?.state) {
+        const remoteUpdatedAt = result.data.updatedAt || result.data.state.updatedAt;
         const remoteState = normalizeState({
           ...result.data.state,
-          updatedAt: result.data.updatedAt || result.data.state.updatedAt
+          updatedAt: remoteUpdatedAt
         });
-        lastSyncedAt.current = remoteState.updatedAt;
+        lastSyncedAt.current = remoteState.updatedAt === remoteUpdatedAt ? remoteState.updatedAt : null;
         stateRef.current = remoteState;
         setState(remoteState);
       } else {
