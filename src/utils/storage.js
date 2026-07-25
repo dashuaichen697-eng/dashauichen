@@ -5,6 +5,8 @@ const STORAGE_KEY = 'stellar-rpg-state-v1';
 const SCHEMA_VERSION = 3;
 const LEGACY_BRAZIL_CONTAINER_TARGET = 24;
 const BRAZIL_CONTAINER_TARGET = 90;
+const BRAZIL_CONTAINER_BASE_PROGRESS = 11;
+const BRAZIL_CONTAINER_PERIOD = '2026 年下半年';
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -108,10 +110,12 @@ function normalizeMainQuests(mainQuests, completions) {
     const current = Number(quest.current ?? 0);
     const target = Number(quest.target ?? 0);
     const nextTarget = !target || target === LEGACY_BRAZIL_CONTAINER_TARGET ? BRAZIL_CONTAINER_TARGET : target;
-    const nextCurrent = Math.max(current, containerCount);
-    changed = changed || nextTarget !== target || nextCurrent !== current;
+    const nextCurrent = Math.max(current, containerCount, BRAZIL_CONTAINER_BASE_PROGRESS);
+    const nextPeriod = !quest.period || quest.period === '2026年' || quest.period === '2026 年' ? BRAZIL_CONTAINER_PERIOD : quest.period;
+    changed = changed || nextTarget !== target || nextCurrent !== current || nextPeriod !== quest.period;
     return {
       ...quest,
+      period: nextPeriod,
       target: nextTarget,
       current: nextCurrent
     };

@@ -14,14 +14,7 @@ window.addEventListener('unhandledrejection', (event) => {
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return;
-      refreshing = true;
-      window.location.reload();
-    });
-
-    navigator.serviceWorker.register('/service-worker.js', { updateViaCache: 'none' }).then((registration) => {
+    const registerServiceWorker = () => navigator.serviceWorker.register('/service-worker.js', { updateViaCache: 'none' }).then((registration) => {
       if (registration.waiting) registration.waiting.postMessage({ type: 'SKIP_WAITING' });
       registration.addEventListener('updatefound', () => {
         const worker = registration.installing;
@@ -35,6 +28,12 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     }).catch((error) => {
       console.error('[StellarRPG] Service worker 注册失败', error);
     });
+
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(registerServiceWorker, { timeout: 2500 });
+    } else {
+      window.setTimeout(registerServiceWorker, 1500);
+    }
   });
 }
 

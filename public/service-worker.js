@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stellar-rpg-pwa-v10';
+const CACHE_NAME = 'stellar-rpg-pwa-v11';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -44,6 +44,12 @@ function cacheResponse(request, response) {
   return response;
 }
 
+function refreshCache(request) {
+  return fetch(request)
+    .then((response) => cacheResponse(request, response))
+    .catch(() => undefined);
+}
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
@@ -52,13 +58,16 @@ self.addEventListener('fetch', (event) => {
 
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const contentType = response.headers.get('content-type') ?? '';
-          if (contentType.includes('text/html')) cacheResponse('/index.html', response.clone());
-          return response;
-        })
-        .catch(() => caches.match('/index.html'))
+      caches.match('/index.html').then((cached) => {
+        const network = fetch(event.request)
+          .then((response) => {
+            const contentType = response.headers.get('content-type') ?? '';
+            if (contentType.includes('text/html')) cacheResponse('/index.html', response.clone());
+            return response;
+          })
+          .catch(() => cached);
+        return cached || network;
+      })
     );
     return;
   }
@@ -66,23 +75,11 @@ self.addEventListener('fetch', (event) => {
   const cacheableDestinations = new Set(['document', 'script', 'style', 'image', 'manifest', 'font']);
   if (!cacheableDestinations.has(event.request.destination) && !APP_SHELL.includes(requestUrl.pathname)) return;
 
-  const networkFirst = ['script', 'style', 'manifest'].includes(event.request.destination);
-
-  if (networkFirst) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => cacheResponse(event.request, response))
-        .catch(() => caches.match(event.request))
-    );
-    return;
-  }
-
   event.respondWith(
-    caches.match(event.request).then((cached) =>
-      cached ||
-      fetch(event.request)
-        .then((response) => cacheResponse(event.request, response))
-        .catch(() => caches.match('/index.html'))
-    )
+    caches.match(event.request).then((cached) => {
+      const network = refreshCache(event.request);
+      if (cached) return cached;
+      return network.then((response) => response || caches.match('/index.html'));
+    })
   );
 });

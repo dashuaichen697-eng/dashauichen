@@ -40,7 +40,7 @@ export default function App() {
   }, [toast, setToast]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setShowSplash(false), 1200);
+    const timer = window.setTimeout(() => setShowSplash(false), 450);
     return () => window.clearTimeout(timer);
   }, []);
 
