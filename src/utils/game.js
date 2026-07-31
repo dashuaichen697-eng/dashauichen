@@ -12,20 +12,47 @@ function normalizeTaskLabel(value = '') {
   return String(value).replace(/\s+/g, '');
 }
 
-export function isBrazilContainerTask(task = {}) {
-  const label = normalizeTaskLabel(task.name ?? task.title ?? '');
-  return task.id === BRAZIL_CONTAINER_TASK_ID
-    || task.taskId === BRAZIL_CONTAINER_TASK_ID
-    || label.includes('卖家走1条柜子')
-    || label.includes('卖家走一条柜子');
+function parseChineseNumber(value = '') {
+  const digits = {
+    零: 0,
+    一: 1,
+    二: 2,
+    两: 2,
+    三: 3,
+    四: 4,
+    五: 5,
+    六: 6,
+    七: 7,
+    八: 8,
+    九: 9
+  };
+  if (/^\d+$/.test(value)) return Number(value);
+  if (value === '十') return 10;
+  if (value.startsWith('十')) return 10 + (digits[value.slice(1)] ?? 0);
+  if (value.includes('十')) {
+    const [tens, ones] = value.split('十');
+    return (digits[tens] ?? 1) * 10 + (digits[ones] ?? 0);
+  }
+  return digits[value] ?? 0;
 }
 
-function advanceBrazilMainQuest(mainQuests = []) {
+export function getBrazilContainerUnits(task = {}) {
+  const label = normalizeTaskLabel(task.name ?? task.title ?? '');
+  const match = label.match(/卖家走([0-9]+|[零一二两三四五六七八九十]+)条(?:柜子|柜)?/);
+  if (match) return Math.max(1, parseChineseNumber(match[1]));
+  return task.id === BRAZIL_CONTAINER_TASK_ID || task.taskId === BRAZIL_CONTAINER_TASK_ID ? 1 : 0;
+}
+
+export function isBrazilContainerTask(task = {}) {
+  return getBrazilContainerUnits(task) > 0;
+}
+
+function advanceBrazilMainQuest(mainQuests = [], amount = 1) {
   return mainQuests.map((quest) => {
     if (quest.id !== BRAZIL_QUEST_ID) return quest;
     const current = Number(quest.current ?? 0);
     const target = Number(quest.target ?? 0);
-    const nextCurrent = current + 1;
+    const nextCurrent = current + Math.max(1, Number(amount) || 1);
     return {
       ...quest,
       current: target > 0 ? Math.min(target, nextCurrent) : nextCurrent
@@ -114,6 +141,7 @@ export function getNewAchievements(state) {
 export function completeTask(state, task, date = new Date()) {
   const dateKey = getDateKey(date);
   if (state.completions[dateKey]?.[task.id]) return { state, reward: null };
+  const brazilContainerUnits = getBrazilContainerUnits(task);
 
   const beforeLevel = getLevel(getEarnedXp(state)).current.level;
   const completion = {
@@ -131,7 +159,7 @@ export function completeTask(state, task, date = new Date()) {
       ...state.completions,
       [dateKey]: { ...(state.completions[dateKey] ?? {}), [task.id]: completion }
     },
-    mainQuests: isBrazilContainerTask(task) ? advanceBrazilMainQuest(state.mainQuests) : state.mainQuests
+    mainQuests: brazilContainerUnits > 0 ? advanceBrazilMainQuest(state.mainQuests, brazilContainerUnits) : state.mainQuests
   };
   const afterLevel = getLevel(getEarnedXp(nextState)).current.level;
   const achievements = getNewAchievements(nextState);

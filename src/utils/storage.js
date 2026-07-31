@@ -1,11 +1,12 @@
 import { DEFAULT_CATEGORIES, DEFAULT_MAIN_QUESTS, DEFAULT_REWARDS, DEFAULT_TASK_TEMPLATES } from '../data/gameConfig';
-import { BRAZIL_QUEST_ID, isBrazilContainerTask } from './game';
+import { BRAZIL_QUEST_ID, getBrazilContainerUnits } from './game';
 
 const STORAGE_KEY = 'stellar-rpg-state-v1';
 const SCHEMA_VERSION = 3;
 const LEGACY_BRAZIL_CONTAINER_TARGET = 24;
 const BRAZIL_CONTAINER_TARGET = 90;
 const BRAZIL_CONTAINER_BASE_PROGRESS = 11;
+const BRAZIL_CONTAINER_BASE_DATE = '2026-07-25';
 const BRAZIL_CONTAINER_PERIOD = '2026 年下半年';
 
 function clone(value) {
@@ -96,21 +97,22 @@ function normalizeRewards(rewards) {
   }));
 }
 
-function getBrazilContainerCompletionCount(completions = {}) {
-  return Object.values(completions).reduce((sum, items) => (
-    sum + Object.values(items ?? {}).filter((item) => isBrazilContainerTask(item)).length
-  ), 0);
+function getBrazilContainerCompletionUnits(completions = {}) {
+  return Object.entries(completions).reduce((sum, [dateKey, items]) => {
+    if (dateKey < BRAZIL_CONTAINER_BASE_DATE) return sum;
+    return sum + Object.values(items ?? {}).reduce((itemSum, item) => itemSum + getBrazilContainerUnits(item), 0);
+  }, 0);
 }
 
 function normalizeMainQuests(mainQuests, completions) {
-  const containerCount = getBrazilContainerCompletionCount(completions);
+  const containerUnits = getBrazilContainerCompletionUnits(completions);
   let changed = false;
   const quests = mainQuests.map((quest) => {
     if (quest.id !== BRAZIL_QUEST_ID) return quest;
     const current = Number(quest.current ?? 0);
     const target = Number(quest.target ?? 0);
     const nextTarget = !target || target === LEGACY_BRAZIL_CONTAINER_TARGET ? BRAZIL_CONTAINER_TARGET : target;
-    const nextCurrent = Math.max(current, containerCount, BRAZIL_CONTAINER_BASE_PROGRESS);
+    const nextCurrent = Math.max(current, BRAZIL_CONTAINER_BASE_PROGRESS + containerUnits);
     const nextPeriod = !quest.period || quest.period === '2026年' || quest.period === '2026 年' ? BRAZIL_CONTAINER_PERIOD : quest.period;
     changed = changed || nextTarget !== target || nextCurrent !== current || nextPeriod !== quest.period;
     return {
